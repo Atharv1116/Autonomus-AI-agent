@@ -86,7 +86,7 @@ class AnalystWorkflow:
         graph.add_node("sql_generator", self._run_sql_generator)
         graph.add_node("guardrail", self._run_guardrail)
         graph.add_node("executor", self._run_executor)
-        graph.add_node("visualization", self._run_visualization)
+        graph.add_node("visualizer", self._run_visualization)
         graph.add_node("insight", self._run_insight)
 
         # --- Define edges ---
@@ -110,10 +110,10 @@ class AnalystWorkflow:
         )
 
         # Executor → Visualization
-        graph.add_edge("executor", "visualization")
+        graph.add_edge("executor", "visualizer")
 
         # Visualization → Insight
-        graph.add_edge("visualization", "insight")
+        graph.add_edge("visualizer", "insight")
 
         # Insight → END
         graph.add_edge("insight", END)

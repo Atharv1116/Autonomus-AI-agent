@@ -21,7 +21,7 @@ pymysql>=1.1.0,<2.0.0
 
 # --- Data Processing ---
 pandas>=2.2.0,<3.0.0
-numpy>=1.26.0,<2.0.0
+numpy>=1.26.0
 
 # --- Visualization ---
 plotly>=5.22.0,<6.0.0
