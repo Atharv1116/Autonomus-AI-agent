@@ -22,18 +22,18 @@ import re
 from typing import Any
 
 # Maximum total prompt characters we allow before sending to Groq.
-# Groq's 413 fires around 15-20 KB; we stay well under with 7 500 chars
-# so there is still room for the system message + response.
-MAX_PROMPT_CHARS: int = 7_500
+# Groq's compound model fails around 5000-6000 chars; we stay well under
+# with 4000 chars, leaving room for the system message + response tokens.
+MAX_PROMPT_CHARS: int = 4_000
 
 # Maximum characters we allow for the schema section of any prompt.
-MAX_SCHEMA_CHARS: int = 4_000
+MAX_SCHEMA_CHARS: int = 2_000
 
 # Maximum characters for the plan JSON section.
-MAX_PLAN_CHARS: int = 1_000
+MAX_PLAN_CHARS: int = 600
 
 # Maximum characters for conversation history.
-MAX_HISTORY_CHARS: int = 500
+MAX_HISTORY_CHARS: int = 300
 
 
 # ---------------------------------------------------------------------------

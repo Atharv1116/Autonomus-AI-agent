@@ -21,6 +21,7 @@ from utils.prompt_budget import (
     compress_plan,
     filter_schema_for_tables,
     fits_in_budget,
+    truncate_text,
     MAX_PROMPT_CHARS,
 )
 
@@ -147,7 +148,42 @@ class SQLGeneratorAgent:
             )
             prompt = _build_prompt(include_examples=False)
 
-        logger.debug("Final prompt size: %d chars", len(prompt))
+        # ── HARD ENFORCE: guarantee payload never exceeds 4500 chars ─────
+        # Groq's compound model 413s at ~5000-6000 chars total.
+        # If still over after removing examples, shrink schema progressively.
+        HARD_LIMIT = 4_500
+        total = len(system_msg) + len(prompt)
+
+        if total > HARD_LIMIT:
+            # Try progressively smaller schema caps: 1500, 800, 400 chars
+            for schema_cap in (1_500, 800, 400):
+                tiny_schema = truncate_text(schema, schema_cap)
+                prompt = self._prompt_template.format(
+                    schema=tiny_schema,
+                    dialect=dialect,
+                    plan=plan_str,
+                    few_shot_examples="",
+                    question=question[:200],
+                    max_rows=self._max_rows,
+                    error_context="No previous errors.",
+                )
+                if len(system_msg) + len(prompt) <= HARD_LIMIT:
+                    logger.warning(
+                        "Schema shrunk to %d chars to fit budget", schema_cap
+                    )
+                    break
+            else:
+                # Absolute last resort: minimal hardcoded prompt
+                prompt = (
+                    f"Database dialect: {dialect}\n"
+                    f"Tables: {', '.join(tables_needed)}\n"
+                    f"Write a SQL SELECT query for: {question[:300]}"
+                )
+                logger.error(
+                    "All budget strategies exhausted — using minimal fallback prompt"
+                )
+
+        logger.info("Final prompt size: %d chars (budget: %d)", len(system_msg) + len(prompt), HARD_LIMIT)
 
         # Call LLM with a very strict system prompt
         messages = [
