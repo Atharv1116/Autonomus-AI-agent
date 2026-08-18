@@ -58,128 +58,329 @@ def apply_custom_css() -> None:
     """Apply custom dark theme CSS for a premium look."""
     st.markdown("""
     <style>
-        /* --- Global Dark Theme --- */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        /* --- Import Premium Google Fonts --- */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap');
 
-        .stApp {
-            font-family: 'Inter', sans-serif;
+        /* --- Global Reset & Typography --- */
+        html, body, [class*="css"], .stApp {
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            background: radial-gradient(circle at 15% 15%, rgba(90, 85, 240, 0.07) 0%, transparent 45%), 
+                        radial-gradient(circle at 85% 85%, rgba(0, 242, 254, 0.05) 0%, transparent 45%), 
+                        #0b0c10 !important;
+            color: #e0e6ed !important;
+        }
+
+        h1, h2, h3, h4, h5, h6, .main-header h1 {
+            font-family: 'Outfit', sans-serif !important;
+            font-weight: 700;
+        }
+
+        code, pre, .sql-block {
+            font-family: 'Fira Code', monospace !important;
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shine {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 17, 28, 0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(90, 85, 240, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 242, 254, 0.5);
         }
 
         /* --- Header --- */
         .main-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 1.5rem 2rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, rgba(20, 24, 43, 0.8) 0%, rgba(10, 12, 22, 0.8) 100%) !important;
+            border: 1px solid rgba(90, 85, 240, 0.2) !important;
+            box-shadow: 0 8px 32px 0 rgba(90, 85, 240, 0.08) !important;
+            backdrop-filter: blur(12px) !important;
+            padding: 2rem !important;
+            border-radius: 16px !important;
+            margin-bottom: 2rem !important;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+        }
+        .main-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #5a55f0, #00f2fe, #5a55f0);
+            background-size: 200% auto;
+            animation: shine 4s linear infinite;
         }
         .main-header h1 {
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            margin: 0;
+            color: #ffffff !important;
+            font-size: 2.6rem !important;
+            font-weight: 800 !important;
+            letter-spacing: -0.03em !important;
+            margin: 0 !important;
+            background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
         }
         .main-header p {
-            color: rgba(255,255,255,0.85);
-            font-size: 1rem;
-            margin: 0.5rem 0 0;
+            color: #94a3b8 !important;
+            font-size: 1.1rem !important;
+            font-weight: 400 !important;
+            margin: 0.75rem 0 0 !important;
         }
 
-        /* --- Metric Cards --- */
-        .metric-card {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 10px;
-            padding: 1rem 1.25rem;
-            margin-bottom: 0.75rem;
+        /* --- Streamlit Metric (Bento Style) --- */
+        div[data-testid="stMetric"] {
+            background: linear-gradient(135deg, rgba(22, 25, 41, 0.7) 0%, rgba(31, 35, 58, 0.7) 100%) !important;
+            border: 1px solid rgba(90, 85, 240, 0.15) !important;
+            border-radius: 12px !important;
+            padding: 1.25rem !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;
+            backdrop-filter: blur(10px) !important;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease !important;
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both !important;
         }
-        .metric-card .label {
-            color: #8b8fa3;
-            font-size: 0.78rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        div[data-testid="stMetric"]:hover {
+            transform: translateY(-4px) !important;
+            border-color: rgba(0, 242, 254, 0.4) !important;
+            box-shadow: 0 12px 40px 0 rgba(90, 85, 240, 0.25) !important;
         }
-        .metric-card .value {
-            color: #e0e0e0;
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-top: 0.25rem;
+        div[data-testid="stMetric"] label {
+            color: #8b8fa3 !important;
+            font-size: 0.85rem !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+        }
+        div[data-testid="stMetric"] [data-testid="stMetricValue"] {
+            color: #ffffff !important;
+            font-size: 1.9rem !important;
+            font-weight: 800 !important;
+            font-family: 'Outfit', sans-serif !important;
         }
 
         /* --- SQL Code Block --- */
         .sql-block {
-            background: #1e1e2f;
-            border: 1px solid #2d2d44;
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', 'Fira Code', monospace;
-            font-size: 0.85rem;
-            color: #a6e22e;
+            background: #08090f !important;
+            border: 1px solid rgba(90, 85, 240, 0.35) !important;
+            border-radius: 10px !important;
+            padding: 1.25rem !important;
+            font-family: 'Fira Code', monospace !important;
+            font-size: 0.9rem !important;
+            color: #00f2fe !important;
+            box-shadow: inset 0 2px 12px rgba(0,0,0,0.6) !important;
             overflow-x: auto;
             white-space: pre-wrap;
         }
 
         /* --- Status Badges --- */
         .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.78rem;
-            font-weight: 600;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            padding: 0.35rem 0.85rem !important;
+            border-radius: 20px !important;
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.02em !important;
         }
         .status-success {
-            background: rgba(0, 204, 150, 0.15);
-            color: #00CC96;
-            border: 1px solid rgba(0, 204, 150, 0.3);
+            background: rgba(0, 242, 254, 0.08) !important;
+            color: #00f2fe !important;
+            border: 1px solid rgba(0, 242, 254, 0.25) !important;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.1) !important;
         }
         .status-error {
-            background: rgba(239, 85, 59, 0.15);
-            color: #EF553B;
-            border: 1px solid rgba(239, 85, 59, 0.3);
+            background: rgba(239, 85, 59, 0.08) !important;
+            color: #EF553B !important;
+            border: 1px solid rgba(239, 85, 59, 0.25) !important;
+            box-shadow: 0 0 10px rgba(239, 85, 59, 0.1) !important;
         }
         .status-processing {
-            background: rgba(99, 110, 250, 0.15);
-            color: #636EFA;
-            border: 1px solid rgba(99, 110, 250, 0.3);
+            background: rgba(90, 85, 240, 0.08) !important;
+            color: #a5b4fc !important;
+            border: 1px solid rgba(90, 85, 240, 0.25) !important;
+            box-shadow: 0 0 10px rgba(90, 85, 240, 0.1) !important;
         }
 
-        /* --- Pipeline Steps --- */
-        .step-indicator {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            margin: 0.25rem 0;
+        /* --- Buttons --- */
+        div.stButton > button {
+            background: linear-gradient(135deg, #5a55f0 0%, #4640de 100%) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 8px !important;
+            padding: 0.6rem 1.2rem !important;
+            font-weight: 600 !important;
+            font-size: 0.95rem !important;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            box-shadow: 0 4px 12px rgba(90, 85, 240, 0.2) !important;
+            width: 100%;
         }
-        .step-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
+        div.stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 24px rgba(90, 85, 240, 0.45), 0 0 0 2px rgba(0, 242, 254, 0.2) !important;
+            border-color: rgba(0, 242, 254, 0.5) !important;
+            background: linear-gradient(135deg, #6b66f2 0%, #524ce6 100%) !important;
         }
-        .step-active { background: #636EFA; }
-        .step-done { background: #00CC96; }
-        .step-pending { background: #4a4a5a; }
-        .step-error { background: #EF553B; }
+        div.stButton > button:active {
+            transform: translateY(0) !important;
+        }
+        
+        /* Secondary buttons (like example question buttons) */
+        div[data-testid="column"] div.stButton > button {
+            background: rgba(22, 25, 41, 0.5) !important;
+            border: 1px solid rgba(90, 85, 240, 0.2) !important;
+            color: #a5b4fc !important;
+            box-shadow: none !important;
+        }
+        div[data-testid="column"] div.stButton > button:hover {
+            background: rgba(90, 85, 240, 0.15) !important;
+            color: #ffffff !important;
+            border-color: #5a55f0 !important;
+        }
+
+        /* --- Inputs, Selectboxes, & Textareas --- */
+        div[data-baseweb="input"] {
+            background-color: rgba(15, 17, 28, 0.7) !important;
+            border: 1px solid rgba(90, 85, 240, 0.2) !important;
+            border-radius: 8px !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+        div[data-baseweb="input"]:focus-within {
+            border-color: #00f2fe !important;
+            box-shadow: 0 0 0 3px rgba(0, 242, 254, 0.15) !important;
+        }
+        div[data-baseweb="select"] {
+            background-color: rgba(15, 17, 28, 0.7) !important;
+            border: 1px solid rgba(90, 85, 240, 0.2) !important;
+            border-radius: 8px !important;
+        }
+
+        /* --- Chat Input --- */
+        div[data-testid="stChatInput"] {
+            background-color: rgba(20, 23, 38, 0.9) !important;
+            border: 1px solid rgba(90, 85, 240, 0.25) !important;
+            border-radius: 12px !important;
+            padding: 0.2rem !important;
+            backdrop-filter: blur(12px) !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
+        }
+        div[data-testid="stChatInput"] textarea {
+            background-color: transparent !important;
+            color: #ffffff !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
 
         /* --- Sidebar Styling --- */
         section[data-testid="stSidebar"] {
-            background: #0E1117;
-            border-right: 1px solid rgba(255,255,255,0.06);
+            background: #08090d !important;
+            border-right: 1px solid rgba(90, 85, 240, 0.15) !important;
+        }
+        section[data-testid="stSidebar"] .stMarkdown h2 {
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1.5rem;
+        }
+
+        /* --- Tabs --- */
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: rgba(15, 17, 28, 0.6) !important;
+            padding: 6px !important;
+            border-radius: 10px !important;
+            border: 1px solid rgba(90, 85, 240, 0.15) !important;
+            gap: 4px !important;
+        }
+        .stTabs [data-baseweb="tab"] {
+            border-radius: 6px !important;
+            padding: 8px 18px !important;
+            color: #8b8fa3 !important;
+            font-weight: 600 !important;
+            font-size: 0.9rem !important;
+            transition: all 0.2s ease !important;
+            border-bottom: none !important;
+        }
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {
+            background-color: #5a55f0 !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(90, 85, 240, 0.25) !important;
+        }
+        .stTabs [data-baseweb="tab"]:hover {
+            color: #ffffff !important;
+        }
+
+        /* --- Dataframe Wrapper --- */
+        div[data-testid="stDataFrame"] {
+            border: 1px solid rgba(90, 85, 240, 0.15) !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            background-color: rgba(15, 17, 28, 0.4) !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+        }
+
+        /* --- Chat Messages --- */
+        div[data-testid="stChatMessage"] {
+            background-color: rgba(20, 22, 37, 0.5) !important;
+            border: 1px solid rgba(255, 255, 255, 0.04) !important;
+            border-radius: 12px !important;
+            padding: 1rem !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+            margin-bottom: 0.8rem !important;
+            transition: transform 0.2s ease, border-color 0.2s ease !important;
+            animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+        }
+        div[data-testid="stChatMessage"]:hover {
+            border-color: rgba(90, 85, 240, 0.2) !important;
+            transform: translateY(-2px) !important;
+        }
+
+        /* --- Expanders --- */
+        div[data-testid="stExpander"] {
+            background-color: rgba(15, 17, 28, 0.45) !important;
+            border: 1px solid rgba(90, 85, 240, 0.15) !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12) !important;
+        }
+        
+        /* --- Progress Bar --- */
+        div[data-testid="stProgress"] > div > div > div {
+            background: linear-gradient(90deg, #5a55f0, #00f2fe) !important;
         }
 
         /* --- Hide default Streamlit elements --- */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
-
-        /* --- Tab Styling --- */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
-        }
-        .stTabs [data-baseweb="tab"] {
-            border-radius: 8px 8px 0 0;
-            padding: 8px 16px;
-        }
     </style>
     """, unsafe_allow_html=True)
 
