@@ -175,7 +175,7 @@ class LLMProviderFactory:
             )
 
         params: dict[str, Any] = {
-            "model_name": model or "llama-3.1-70b-versatile",
+            "model_name": model or "groq/compound",
             "temperature": temperature,
             "max_tokens": max_tokens,
             "streaming": streaming,

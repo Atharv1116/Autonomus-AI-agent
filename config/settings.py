@@ -63,7 +63,7 @@ class Settings(BaseSettings):
 
     # --- Groq ---
     groq_api_key: Optional[str] = Field(default=None, description="Groq API key")
-    groq_model: str = Field(default="llama-3.1-70b-versatile", description="Groq model name")
+    groq_model: str = Field(default="groq/compound", description="Groq model name")
 
     # --- Ollama ---
     ollama_base_url: str = Field(default="http://localhost:11434", description="Ollama base URL")

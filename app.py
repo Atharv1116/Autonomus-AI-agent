@@ -357,7 +357,7 @@ def render_sidebar() -> None:
         default_models = {
             "nvidia_nim": "meta/llama-3.1-70b-instruct",
             "openai": "gpt-4o",
-            "groq": "llama-3.1-70b-versatile",
+            "groq": "groq/compound",
             "ollama": "llama3.1",
         }
 
