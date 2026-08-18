@@ -74,6 +74,25 @@ class ExecutorAgent:
             state["current_step"] = "executor"
             return state
 
+        # Pre-execution sanity: reject if SQL still contains obvious non-SQL content
+        non_sql_markers = [
+            '```',      # leftover code fences
+            '| ---',    # markdown table separator
+            '\n|',      # pipe-table rows
+            '\n#',      # markdown headings
+            '\n*',      # markdown list items
+        ]
+        for marker in non_sql_markers:
+            if marker in sql:
+                state["error"] = (
+                    f"SQL syntax error: generated query contains non-SQL content "
+                    f"({repr(marker)}). The model included markdown — regenerating."
+                )
+                state["generated_sql"] = ""
+                state["current_step"] = "executor"
+                logger.warning("Execution blocked: non-SQL content in query: %s", sql[:200])
+                return state
+
         logger.info("Executing SQL: %s", sql[:200])
 
         try:
@@ -194,7 +213,7 @@ class ExecutorAgent:
 
         for keyword, friendly_msg in error_map.items():
             if keyword in error_str:
-                return f"{friendly_msg}\n\nTechnical detail: {str(error)[:300]}"
+                return f"{friendly_msg}\n\nTechnical detail: {str(error)[:500]}"
 
         return f"Query execution error: {str(error)[:500]}"
 

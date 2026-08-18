@@ -129,16 +129,38 @@ class TestSQLGeneratorAgent:
         assert "SELECT" in result["generated_sql"].upper()
 
     def test_clean_sql_static_method(self) -> None:
-        """Test the static _clean_sql method directly."""
+        """Test _extract_sql classmethod (replaces _clean_sql)."""
         # Code block with sql language tag
-        assert "SELECT 1" in SQLGeneratorAgent._clean_sql("```sql\nSELECT 1\n```")
+        result = SQLGeneratorAgent._extract_sql("```sql\nSELECT 1\n```")
+        assert "SELECT 1" in result
 
-        # Trailing semicolon
-        assert not SQLGeneratorAgent._clean_sql("SELECT 1;").endswith(";")
+        # Trailing semicolon removed
+        assert not SQLGeneratorAgent._extract_sql("SELECT 1;").endswith(";")
 
-        # Quoted SQL
-        assert "SELECT 1" in SQLGeneratorAgent._clean_sql('"SELECT 1"')
+        # Quoted SQL unwrapped
+        assert "SELECT 1" in SQLGeneratorAgent._extract_sql('"SELECT 1"')
 
-        # Multiple spaces
-        cleaned = SQLGeneratorAgent._clean_sql("SELECT   *   FROM   products")
+        # Multiple spaces normalised
+        cleaned = SQLGeneratorAgent._extract_sql("SELECT   *   FROM   products")
         assert "  " not in cleaned
+
+        # SQL followed by markdown explanation -- only SQL kept
+        messy = (
+            "SELECT p.name FROM products p\n\n"
+            "# What the Result Shows\n"
+            "| col | val |\n"
+            "| --- | --- |\n"
+        )
+        extracted = SQLGeneratorAgent._extract_sql(messy)
+        assert extracted.upper().startswith("SELECT")
+        assert "|" not in extracted
+        assert "#" not in extracted
+
+        # SQL inside code fence followed by explanation -- only SQL kept
+        with_fence = (
+            "```sql\nSELECT id FROM orders\n```\n"
+            "This query returns all orders."
+        )
+        extracted2 = SQLGeneratorAgent._extract_sql(with_fence)
+        assert "SELECT id FROM orders" in extracted2
+        assert "This query" not in extracted2
