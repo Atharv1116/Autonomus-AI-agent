@@ -67,12 +67,13 @@ class CSVHandler:
             table_name = "".join(c if c.isalnum() or c == "_" else "_" for c in table_name)
             table_name = table_name.lower().strip("_")
 
-        # Read CSV
+        # Read CSV with automatic encoding detection
         if file_content is not None:
-            import io
-            df = pd.read_csv(io.BytesIO(file_content))
+            import io as _io
+            df = self._read_csv_bytes(file_content)
         elif file_path is not None:
-            df = pd.read_csv(file_path)
+            with open(file_path, "rb") as fh:
+                df = self._read_csv_bytes(fh.read())
         else:
             raise ValueError("Either file_path or file_content must be provided")
 
@@ -99,6 +100,59 @@ class CSVHandler:
             table_name, len(df), len(df.columns),
         )
         return table_info
+
+    @staticmethod
+    def _read_csv_bytes(raw: bytes) -> pd.DataFrame:
+        """
+        Read CSV bytes into a DataFrame with automatic encoding detection.
+
+        Tries chardet first, then falls back through a ranked list of
+        common encodings so that Windows-1252, Latin-1, and UTF-8-BOM
+        files all load without raising UnicodeDecodeError.
+
+        Args:
+            raw: Raw bytes of the CSV file.
+
+        Returns:
+            Parsed DataFrame.
+
+        Raises:
+            ValueError: If no supported encoding can read the file.
+        """
+        import io
+
+        # 1. Try chardet auto-detection first
+        try:
+            import chardet
+            detected = chardet.detect(raw)
+            enc = detected.get("encoding") or "utf-8"
+            confidence = detected.get("confidence", 0)
+            logger.debug("chardet detected encoding=%s confidence=%.2f", enc, confidence)
+            return pd.read_csv(io.BytesIO(raw), encoding=enc)
+        except ImportError:
+            logger.debug("chardet not installed, trying fallback encodings")
+        except (UnicodeDecodeError, LookupError):
+            logger.debug("chardet-detected encoding failed, trying fallbacks")
+
+        # 2. Fallback list ordered by real-world prevalence
+        fallback_encodings = [
+            "utf-8-sig",   # UTF-8 with BOM (common from Excel CSV exports)
+            "cp1252",      # Windows Western European (the most common "not UTF-8")
+            "latin-1",     # ISO 8859-1 superset — never raises UnicodeDecodeError
+            "iso-8859-15", # Latin-1 variant with € symbol
+            "utf-16",      # Some Excel exports
+        ]
+        for enc in fallback_encodings:
+            try:
+                df = pd.read_csv(io.BytesIO(raw), encoding=enc)
+                logger.info("CSV decoded successfully with encoding=%s", enc)
+                return df
+            except (UnicodeDecodeError, LookupError):
+                continue
+
+        # 3. Last resort: replace undecodable bytes instead of crashing
+        logger.warning("All encodings failed; falling back to utf-8 with errors=replace")
+        return pd.read_csv(io.BytesIO(raw), encoding="utf-8", errors="replace")
 
     def get_loaded_tables(self) -> dict[str, dict]:
         """Return info about all loaded CSV tables."""
