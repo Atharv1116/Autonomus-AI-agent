@@ -80,6 +80,13 @@ graph TD
 
 ---
 
+## 📸 Screenshots
+
+### Streamlit Dashboard UI
+![Dashboard UI](screenshots/dashboard_main.png)
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
