@@ -66,7 +66,7 @@ class SQLGeneratorAgent:
                 data = json.load(f)
                 examples = data.get("examples", [])
                 lines = []
-                for ex in examples[:5]:  # Use top 5 examples
+                for ex in examples[:2]:  # Use top 2 examples
                     lines.append(f"Question: {ex['question']}")
                     lines.append(f"SQL: {ex['sql']}")
                     lines.append("")
