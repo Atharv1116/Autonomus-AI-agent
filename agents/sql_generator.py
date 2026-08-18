@@ -148,10 +148,10 @@ class SQLGeneratorAgent:
             )
             prompt = _build_prompt(include_examples=False)
 
-        # ── HARD ENFORCE: guarantee payload never exceeds 4500 chars ─────
-        # Groq's compound model 413s at ~5000-6000 chars total.
+        # ── HARD ENFORCE: guarantee payload never exceeds 3200 chars ─────
+        # Groq's compound model 413s at very small sizes.
         # If still over after removing examples, shrink schema progressively.
-        HARD_LIMIT = 4_500
+        HARD_LIMIT = 3_200
         total = len(system_msg) + len(prompt)
 
         if total > HARD_LIMIT:

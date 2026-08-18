@@ -93,8 +93,41 @@ class PlannerAgent:
         )
 
         # Call LLM
+        system_msg = "You are a data analysis planning expert. Always respond with valid JSON."
+        total = len(system_msg) + len(prompt)
+        HARD_LIMIT = 3_200
+
+        # Progressive shrink loop for the planner
+        if total > HARD_LIMIT:
+            for schema_cap in (800, 400, 200):
+                tiny_schema = truncate_text(full_schema, schema_cap)
+                prompt = self._prompt_template.format(
+                    schema=tiny_schema,
+                    question=question,
+                    conversation_history=history_str[:100],  # trim history more if needed
+                )
+                if len(system_msg) + len(prompt) <= HARD_LIMIT:
+                    logger.warning(
+                        "Planner schema cap reduced to %d chars to fit prompt budget",
+                        schema_cap,
+                    )
+                    break
+            else:
+                # Absolute minimal fallback prompt
+                prompt = (
+                    f"Create a JSON analysis plan for this query: {question[:150]}.\n"
+                    f"Tables available: {full_schema[:200]}..."
+                )
+                logger.error("Planner budget strategies exhausted — using minimal prompt")
+
+        logger.info(
+            "Final planner prompt size: %d chars (budget: %d)",
+            len(system_msg) + len(prompt),
+            HARD_LIMIT,
+        )
+
         messages = [
-            SystemMessage(content="You are a data analysis planning expert. Always respond with valid JSON."),
+            SystemMessage(content=system_msg),
             HumanMessage(content=prompt),
         ]
 
