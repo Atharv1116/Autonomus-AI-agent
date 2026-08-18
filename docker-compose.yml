@@ -1,0 +1,62 @@
+# ============================================
+# Autonomous Data Analyst Agent
+# Docker Compose — Full Stack Deployment
+# ============================================
+
+version: "3.9"
+
+services:
+  # ---- PostgreSQL Database ----
+  db:
+    image: postgres:16-alpine
+    container_name: analyst-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: analyst_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d analyst_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---- Database Seed (one-shot) ----
+  db-seed:
+    build: .
+    container_name: analyst-db-seed
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/analyst_db
+    entrypoint: ["python", "-m", "database.sample_data"]
+    restart: "no"
+
+  # ---- Streamlit Application ----
+  app:
+    build: .
+    container_name: analyst-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      db-seed:
+        condition: service_completed_successfully
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/analyst_db
+    volumes:
+      - ./exports:/app/exports
+      - ./logs:/app/logs
+
+volumes:
+  pgdata:
+    driver: local
