@@ -59,10 +59,19 @@ def setup_logging(
         logger.handlers.clear()
 
     # --- Console Handler ---
-    console_handler = logging.StreamHandler(sys.stdout)
+    # Wrap stdout in a UTF-8 writer so Windows cp1252 consoles never crash
+    # when log messages contain unicode characters (box-drawing, emoji, etc.)
+    import io as _io
+    utf8_stdout = _io.TextIOWrapper(
+        sys.stdout.buffer,
+        encoding="utf-8",
+        errors="replace",
+        line_buffering=True,
+    ) if hasattr(sys.stdout, "buffer") else sys.stdout
+    console_handler = logging.StreamHandler(utf8_stdout)
     console_handler.setLevel(getattr(logging, level.upper(), logging.INFO))
     console_format = ColoredFormatter(
-        fmt="%(asctime)s │ %(levelname)-8s │ %(name)-25s │ %(message)s",
+        fmt="%(asctime)s | %(levelname)-8s | %(name)-25s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     console_handler.setFormatter(console_format)
