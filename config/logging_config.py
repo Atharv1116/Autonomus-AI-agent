@@ -35,6 +35,32 @@ class ColoredFormatter(logging.Formatter):
         return super().format(record)
 
 
+class SafeStreamHandler(logging.StreamHandler):
+    """
+    StreamHandler that never crashes on Windows cp1252 consoles.
+
+    Streamlit replaces sys.stdout with its own internal stream object
+    whose .buffer can be closed between reruns — wrapping it with
+    TextIOWrapper raises 'I/O operation on closed file'. Instead, we
+    override emit() to catch any UnicodeEncodeError / ValueError and
+    fall back to an ASCII-safe representation.
+    """
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            super().emit(record)
+        except (UnicodeEncodeError, ValueError):
+            # Strip non-ASCII characters and try again
+            try:
+                msg = self.format(record)
+                safe_msg = msg.encode("ascii", errors="replace").decode("ascii")
+                stream = self.stream
+                stream.write(safe_msg + self.terminator)
+                self.flush()
+            except Exception:
+                self.handleError(record)
+
+
 def setup_logging(
     level: str = "INFO",
     log_dir: Optional[str] = None,
@@ -59,16 +85,11 @@ def setup_logging(
         logger.handlers.clear()
 
     # --- Console Handler ---
-    # Wrap stdout in a UTF-8 writer so Windows cp1252 consoles never crash
-    # when log messages contain unicode characters (box-drawing, emoji, etc.)
-    import io as _io
-    utf8_stdout = _io.TextIOWrapper(
-        sys.stdout.buffer,
-        encoding="utf-8",
-        errors="replace",
-        line_buffering=True,
-    ) if hasattr(sys.stdout, "buffer") else sys.stdout
-    console_handler = logging.StreamHandler(utf8_stdout)
+    # Use SafeStreamHandler which gracefully handles Windows cp1252 encoding
+    # errors without crashing. Never wrap sys.stdout in TextIOWrapper here:
+    # Streamlit's internal stream object may have a .buffer that is closed
+    # between reruns, which raises "I/O operation on closed file".
+    console_handler = SafeStreamHandler(sys.stdout)
     console_handler.setLevel(getattr(logging, level.upper(), logging.INFO))
     console_format = ColoredFormatter(
         fmt="%(asctime)s | %(levelname)-8s | %(name)-25s | %(message)s",
