@@ -16,6 +16,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from agents.state import AgentState
 from config.logging_config import get_logger
+from utils.prompt_budget import compress_history, MAX_SCHEMA_CHARS, truncate_text
 
 logger = get_logger("agents.planner")
 
@@ -73,24 +74,22 @@ class PlannerAgent:
             Updated state with 'plan' populated.
         """
         question = state.get("user_question", "")
-        schema = state.get("schema_info", "")
+        full_schema = state.get("schema_info", "")
         history = state.get("conversation_history", [])
 
         logger.info("Planning analysis for: '%s'", question[:100])
 
-        # Format conversation history
-        history_str = ""
-        if history:
-            history_str = "\n".join(
-                f"{msg.get('role', 'user').upper()}: {msg.get('content', '')}"
-                for msg in history[-5:]  # Last 5 messages for context
-            )
+        # Cap schema size so the planner prompt stays within budget
+        schema = truncate_text(full_schema, MAX_SCHEMA_CHARS)
+
+        # Format conversation history within its own char budget
+        history_str = compress_history(history)
 
         # Build prompt
         prompt = self._prompt_template.format(
             schema=schema,
             question=question,
-            conversation_history=history_str or "No previous conversation.",
+            conversation_history=history_str,
         )
 
         # Call LLM

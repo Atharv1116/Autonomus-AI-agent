@@ -17,6 +17,12 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from agents.state import AgentState
 from config.logging_config import get_logger
+from utils.prompt_budget import (
+    compress_plan,
+    filter_schema_for_tables,
+    fits_in_budget,
+    MAX_PROMPT_CHARS,
+)
 
 logger = get_logger("agents.sql_generator")
 
@@ -86,7 +92,7 @@ class SQLGeneratorAgent:
             Updated state with 'generated_sql' populated.
         """
         plan = state.get("plan", {})
-        schema = state.get("schema_info", "")
+        full_schema = state.get("schema_info", "")
         dialect = state.get("database_dialect", "postgresql")
         question = state.get("user_question", "")
         error_context = state.get("error", "")
@@ -97,31 +103,55 @@ class SQLGeneratorAgent:
             dialect, retry_count, question[:80],
         )
 
-        # Build prompt
-        prompt = self._prompt_template.format(
-            schema=schema,
-            dialect=dialect,
-            plan=json.dumps(plan, indent=2),
-            few_shot_examples=self._few_shot_examples,
-            question=question,
-            max_rows=self._max_rows,
-            error_context=error_context if retry_count > 0 else "No previous errors.",
+        # ── Budget-aware prompt construction ─────────────────────────────
+        # 1. Filter schema to only the tables the planner identified
+        tables_needed = plan.get("tables_needed", [])
+        schema = filter_schema_for_tables(full_schema, tables_needed)
+        logger.debug(
+            "Schema filtered: %d -> %d chars (tables=%s)",
+            len(full_schema), len(schema), tables_needed,
         )
+
+        # 2. Compress plan JSON (drop verbose fields, no indentation)
+        plan_str = compress_plan(plan)
+
+        # 3. Build prompt with examples first; drop them if over budget
+        error_ctx = (error_context or "")[:300] if retry_count > 0 else "No previous errors."
+
+        def _build_prompt(include_examples: bool) -> str:
+            return self._prompt_template.format(
+                schema=schema,
+                dialect=dialect,
+                plan=plan_str,
+                few_shot_examples=self._few_shot_examples if include_examples else "",
+                question=question,
+                max_rows=self._max_rows,
+                error_context=error_ctx,
+            )
+
+        system_msg = (
+            "You are an expert SQL engineer. Your ONLY output must be a raw SQL SELECT query.\n"
+            "STRICT RULES:\n"
+            "- Output ONLY the SQL query. Nothing else.\n"
+            "- NO markdown (no ```, no **bold**, no #heading).\n"
+            "- NO explanations, comments, or result tables.\n"
+            "- NO leading/trailing text of any kind.\n"
+            "- NO semicolon at the end.\n"
+            "- Start your response directly with SELECT (or WITH for CTEs)."
+        )
+
+        prompt = _build_prompt(include_examples=True)
+        if not fits_in_budget(prompt, system_msg):
+            logger.warning(
+                "Prompt too large (%d chars) — dropping few-shot examples", len(prompt)
+            )
+            prompt = _build_prompt(include_examples=False)
+
+        logger.debug("Final prompt size: %d chars", len(prompt))
 
         # Call LLM with a very strict system prompt
         messages = [
-            SystemMessage(
-                content=(
-                    "You are an expert SQL engineer. Your ONLY output must be a raw SQL SELECT query.\n"
-                    "STRICT RULES:\n"
-                    "- Output ONLY the SQL query. Nothing else.\n"
-                    "- NO markdown (no ```, no **bold**, no #heading).\n"
-                    "- NO explanations, comments, or result tables.\n"
-                    "- NO leading/trailing text of any kind.\n"
-                    "- NO semicolon at the end.\n"
-                    "- Start your response directly with SELECT (or WITH for CTEs)."
-                )
-            ),
+            SystemMessage(content=system_msg),
             HumanMessage(content=prompt),
         ]
 
